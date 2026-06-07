@@ -28,7 +28,7 @@ st.markdown("""
     .status-warning { color: #F59E0B; font-weight: bold; }
     .status-danger { color: #EF4444; font-weight: bold; }
     </style>
-""", unsafe_view_allowed=True)
+""", unsafe_allow_html=True)
 
 # App Header
 st.title("⚙️ DrillSense Pro")
@@ -57,7 +57,7 @@ def generate_live_data():
     vibration = np.random.normal(1.5, 0.2) + (np.random.choice([0, 2.5], p=[0.95, 0.05]) if base_wear > 50 else 0)
     spindle = np.random.normal(12000, 150)
     
-    # Simple predictive heuristic algorithm for RUL / Failure Risk
+    # Predictive heuristic algorithm for RUL / Failure Risk
     failure_prob = min(99.9, (base_wear * 0.5) + (max(0, temp - 65) * 2) + (max(0, vibration - 1.5) * 15))
     
     return {
@@ -83,18 +83,18 @@ with col1:
     else:
         status_html = f"<span class='status-danger'>CRITICAL ({prob}%)</span>"
         
-    st.markdown(f"<div class='metric-box'><h4>🔮 Failure Probability</h4><h2>{status_html}</h2></div>", unsafe_view_allowed=True)
+    st.markdown(f"<div class='metric-box'><h4>🔮 Failure Probability</h4><h2>{status_html}</h2></div>", unsafe_allow_html=True)
 
 with col2:
-    st.markdown(f"<div class='metric-box'><h4>🌡️ Spindle Temp</h4><h2>{new_data['Temperature']} °C</h2></div>", unsafe_view_allowed=True)
+    st.markdown(f"<div class='metric-box'><h4>🌡️ Spindle Temp</h4><h2>{new_data['Temperature']} °C</h2></div>", unsafe_allow_html=True)
 
 with col3:
-    st.markdown(f"<div class='metric-box'><h4>📳 Vibration (RMS)</h4><h2>{new_data['Vibration']} mm/s</h2></div>", unsafe_view_allowed=True)
+    st.markdown(f"<div class='metric-box'><h4>📳 Vibration (RMS)</h4><h2>{new_data['Vibration']} mm/s</h2></div>", unsafe_allow_html=True)
 
 with col4:
-    st.markdown(f"<div class='metric-box'><h4>⏳ Tool Wear Index</h4><h2>{new_data['Tool_Wear']}%</h2></div>", unsafe_view_allowed=True)
+    st.markdown(f"<div class='metric-box'><h4>⏳ Tool Wear Index</h4><h2>{new_data['Tool_Wear']}%</h2></div>", unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_view_allowed=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ----------------- GRAPHICAL CHARTS (PLOTLY) -----------------
 col_chart1, col_chart2 = st.columns(2)
@@ -130,4 +130,3 @@ st.dataframe(df.sort_index(ascending=False), use_container_width=True)
 # Auto-refresh loop mechanism
 time.sleep(sampling_rate)
 st.rerun()
-
