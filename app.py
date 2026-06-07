@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 
 # =====================================================================
-# 1. PAGE SETUP & CYBERPUNK CSS ARCHITECTURE
+# 1. PAGE CONFIGURATION & CYBERPUNK UI STYLING
 # =====================================================================
 st.set_page_config(
     page_title="DrillSense Pro v2.0.1",
@@ -15,383 +15,291 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom injection for dark neon engineering style
+# Dark-cyberpunk layout stylesheet injection
 st.markdown("""
     <style>
-    /* Main body background override */
     .stApp {
-        background-color: #0B0F13 !important;
+        background-color: #0A0D10 !important;
         color: #E2E8F0 !important;
     }
-    
-    /* Custom Neon Containers */
-    .panel-box {
-        background: rgba(16, 22, 30, 0.85);
+    /* Dashboard Glassmorphism Cards */
+    .panel-card {
+        background: rgba(16, 22, 30, 0.9);
         border: 1px solid #1E293B;
-        border-radius: 6px;
-        padding: 16px;
-        margin-bottom: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
     }
-    .panel-header {
+    .panel-title {
         font-size: 0.75rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.12em;
         color: #64748B;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         border-bottom: 1px solid #1E293B;
-        padding-bottom: 4px;
+        padding-bottom: 6px;
     }
-    
-    /* Twin/Telemetry Metric Blocks */
-    .metric-value {
-        font-size: 1.6rem;
+    /* High-Density Matrix Grid Items */
+    .matrix-box {
+        background: #11161F;
+        border: 1px solid #1E293B;
+        border-radius: 6px;
+        padding: 12px;
+        text-align: center;
+    }
+    .matrix-label {
+        font-size: 0.7rem;
+        color: #64748B;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+    .matrix-value {
+        font-size: 1.5rem;
         font-weight: 700;
         font-family: 'Courier New', monospace;
         color: #00F0FF;
+        margin-top: 4px;
     }
-    .metric-unit {
+    .matrix-unit {
         font-size: 0.75rem;
-        color: #64748B;
-        margin-left: 4px;
+        color: #475569;
+        margin-left: 2px;
     }
-    
-    /* Dynamic Status Badges */
-    .badge-nominal {
-        background-color: rgba(16, 185, 129, 0.1);
-        color: #10B981;
-        border: 1px solid #10B981;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-    .badge-warning {
-        background-color: rgba(245, 158, 11, 0.1);
-        color: #F59E0B;
-        border: 1px solid #F59E0B;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-    .badge-critical {
-        background-color: rgba(239, 68, 68, 0.1);
-        color: #EF4444;
-        border: 1px solid #EF4444;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-    
-    /* Code blocks adjustments */
-    code {
-        color: #F43F5E !important;
-        background-color: #1E293B !important;
-    }
+    /* Status Labels */
+    .status-active { color: #10B981; font-weight: bold; }
+    .status-alert { color: #EF4444; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
 # =====================================================================
-# 2. SESSION STATE STATE-MACHINE INITIALIZATION
+# 2. STATE MACHINE LOGIC (SESSION STATE)
 # =====================================================================
 if 'running' not in st.session_state:
     st.session_state.running = False
 if 'mode' not in st.session_state:
     st.session_state.mode = "MANUAL"
+if 'horizon' not in st.session_state:
+    st.session_state.horizon = 10
 if 'history' not in st.session_state:
-    st.session_state.history = pd.DataFrame(columns=[
-        'Timestamp', 'Temperature', 'Vibration', 'Spindle_Speed', 'Torque', 'Pressure', 'Tool_Wear', 'Failure_Prob'
-    ])
-if 'log' not in st.session_state:
-    st.session_state.log = ["SYSTEM INITIALIZED - STANDBY"]
+    # Initialize baseline metrics dataframe
+    st.session_state.history = pd.DataFrame({
+        'Timestamp': [datetime.now().strftime("%H:%M:%S")], 
+        'Temperature': [42.0], 'Vibration': [1.5], 'Spindle_Speed': [1750], 
+        'Torque': [12.5], 'Pressure': [114.0], 'Tool_Wear': [12.4], 'Failure_Prob': [4.2]
+    })
+if 'logs' not in st.session_state:
+    st.session_state.logs = ["SYSTEM READY - STANDBY MODE"]
 
 # =====================================================================
-# 3. CORE TELEMETRY SIMULATION ENGINE
+# 3. ADVANCED SIGNAL PROCESSING ENGINE
 # =====================================================================
-def get_sensor_packet():
-    t_str = datetime.now().strftime("%H:%M:%S")
+def compute_telemetry_step():
+    t_now = datetime.now().strftime("%H:%M:%S")
+    if not st.session_state.running:
+        return {
+            'Timestamp': t_now, 'Temperature': 22.1, 'Vibration': 0.02, 
+            'Spindle_Speed': 0, 'Torque': 0.0, 'Pressure': 0.0, 
+            'Tool_Wear': 12.4, 'Failure_Prob': 0.0
+        }
     
-    if st.session_state.running:
-        # Generate operational data paths mimicking mechanical loading
-        base_time = (time.time() % 300) / 3
-        
-        # Introduce a sudden anomaly surge at specific intervals to match video demonstration
-        is_anomaly = (int(time.time()) % 45 > 35)
-        
-        if is_anomaly:
-            vibration = np.random.normal(6.2, 0.5)
-            temperature = np.random.normal(84.5, 2.1)
-            torque = np.random.normal(48.0, 3.0)
-            pressure = np.random.normal(210.0, 12.0)
-            failure_prob = np.random.uniform(52.0, 78.4)
-        else:
-            vibration = np.random.normal(1.8, 0.15)
-            temperature = np.random.normal(42.1, 0.8)
-            torque = np.random.normal(12.5, 0.4)
-            pressure = np.random.normal(114.2, 2.5)
-            failure_prob = np.random.uniform(3.1, 8.2)
-            
-        spindle_speed = int(np.random.normal(1750, 25) if not is_anomaly else np.random.normal(1350, 90))
-        tool_wear = round(min(100.0, 12.4 + (base_time * 0.15)), 2)
+    # Mathematical data degradation sim over time
+    elapsed_factor = (time.time() % 400) / 4
+    cycle_spike = (int(time.time()) % 30 > 22) # Generates automated cyclical load faults
+    
+    if cycle_spike:
+        vib = np.random.normal(5.8, 0.4)
+        tmp = np.random.normal(81.2, 1.8)
+        trq = np.random.normal(44.1, 2.5)
+        prs = np.random.normal(208.5, 9.0)
+        fail_p = min(99.4, 55.0 + (elapsed_factor * 0.2))
+        spd = int(np.random.normal(1320, 45))
     else:
-        # Machine Standby state values
-        vibration, temperature, torque, pressure, failure_prob, spindle_speed, tool_wear = 0.0, 21.0, 0.0, 0.0, 0.0, 0, 12.4
-        
+        vib = np.random.normal(1.6, 0.1)
+        tmp = np.random.normal(41.5, 0.6)
+        trq = np.random.normal(12.2, 0.3)
+        prs = np.random.normal(112.4, 1.5)
+        fail_p = max(2.1, 3.5 + (elapsed_factor * 0.05))
+        spd = int(np.random.normal(1765, 15))
+
+    wear = round(min(100.0, 12.4 + (elapsed_factor * 0.08)), 2)
+    
     return {
-        'Timestamp': t_str, 'Temperature': round(temperature, 1), 'Vibration': round(vibration, 2),
-        'Spindle_Speed': spindle_speed, 'Torque': round(torque, 1), 'Pressure': round(pressure, 1),
-        'Tool_Wear': tool_wear, 'Failure_Prob': round(failure_prob, 1)
+        'Timestamp': t_now, 'Temperature': round(tmp, 1), 'Vibration': round(vib, 2),
+        'Spindle_Speed': spd, 'Torque': round(trq, 1), 'Pressure': round(prs, 1),
+        'Tool_Wear': wear, 'Failure_Prob': round(fail_p, 1)
     }
 
-# Update real-time loop variables
-current_packet = get_sensor_packet()
+# Process mathematical pipeline state updates
+pkt = compute_telemetry_step()
 if st.session_state.running:
-    st.session_state.history = pd.concat([st.session_state.history, pd.DataFrame([current_packet])]).tail(30)
-    
-    # Process system logs dynamically based on thresholds
-    if current_packet['Failure_Prob'] > 50.0:
-        log_entry = f"[{current_packet['Timestamp']}] CRITICAL: HIGH RISK FAILURE FAULT STAGE DETECTED"
-        if log_entry not in st.session_state.log:
-            st.session_state.log.insert(0, log_entry)
+    st.session_state.history = pd.concat([st.session_state.history, pd.DataFrame([pkt])]).tail(25)
+    if pkt['Failure_Prob'] > 50.0:
+        msg = f"[{pkt['Timestamp']}] CRITICAL FAULT LEVEL RECORDED: HAZARD THRESHOLD EXCEEDED"
+        if msg not in st.session_state.logs:
+            st.session_state.logs.insert(0, msg)
 
-df_history = st.session_state.history
+hist_df = st.session_state.history
 
 # =====================================================================
-# 4. MASTER NAVIGATION HEADER
+# 4. DASHBOARD HEADER PLATFORM
 # =====================================================================
-h_col1, h_col2, h_col3 = st.columns([0.4, 0.4, 0.2])
-with h_col1:
-    st.markdown("<h2 style='margin:0; padding:0; color:#FFFFFF;'>⚙️ DRILLSENSE PRO <span style='font-size:0.9rem; color:#64748B;'>v2.0.1</span></h2>", unsafe_allow_html=True)
-with h_col2:
-    status_badge = '<span class="badge-nominal">NOMINAL</span>' if current_packet['Failure_Prob'] < 50.0 else '<span class="badge-critical">CRITICAL ALERT</span>'
-    st.markdown(f"<div style='padding-top:12px;'>DATASET: 10,000 ROWS &nbsp;&nbsp;|&nbsp;&nbsp; STATUS: {status_badge}</div>", unsafe_allow_html=True)
-with h_col3:
-    st.markdown(f"<div style='text-align:right; padding-top:12px; color:#64748B; font-family:monospace;'>{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div>", unsafe_allow_html=True)
+h_1, h_2, h_3 = st.columns([0.3, 0.5, 0.2])
+with h_1:
+    st.markdown("<h2 style='margin:0; color:#FFFFFF;'>⚙️ DRILLSENSE PRO <span style='font-size:0.85rem; color:#475569;'>v2.0.1</span></h2>", unsafe_allow_html=True)
+with h_2:
+    badge = '<span class="status-active" style="border:1px solid #10B981; padding:2px 8px; background:rgba(16,185,129,0.1); border-radius:4px;">NOMINAL OPERATION</span>' if pkt['Failure_Prob'] < 50.0 else '<span class="status-alert" style="border:1px solid #EF4444; padding:2px 8px; background:rgba(239,68,68,0.1); border-radius:4px;">CRITICAL SYSTEM FAULT</span>'
+    st.markdown(f"<div style='padding-top:8px;'>DATA STREAM: ACTIVE (10k ROWS) &nbsp;&nbsp;|&nbsp;&nbsp; MACHINE STATUS: {badge}</div>", unsafe_allow_html=True)
+with h_3:
+    st.markdown(f"<div style='text-align:right; font-family:monospace; color:#475569; padding-top:8px;'>{datetime.now().strftime('%H:%M:%S')}</div>", unsafe_allow_html=True)
 
-# Application Navigation Tabs
-tab_live, tab_analytics, tab_ml, tab_matlab = st.tabs([
-    "📊 LIVE MONITOR", "📈 ANALYTICS", "🤖 ML MODEL", "🛠️ MATLAB GUIDE"
+tab_monitor, tab_analytics, tab_ml, tab_matlab = st.tabs([
+    "🎯 LIVE MONITOR", "📊 ANALYTICS VIEW", "🧠 ML HORIZON MODEL", "💻 MATLAB INTERFACE"
 ])
 
 # =====================================================================
-# TAB 1: LIVE TELEMETRY & DIGITAL TWIN MONITORING
+# TAB 1: LIVE HARDWARE TWIN & SENSOR TELEMETRY METRIC MATRIX
 # =====================================================================
-with tab_live:
-    layout_left, layout_right = st.columns([0.3, 0.7])
+with tab_monitor:
+    col_left, col_right = st.columns([0.3, 0.7])
     
-    with layout_left:
-        st.markdown("<div class='panel-box'><div class='panel-header'>VIRTUAL DRILL UNIT - REAL-TIME TWIN</div>", unsafe_allow_html=True)
-        
-        # Engine Control Systems UI Panel
-        c1, c2 = st.columns(2)
-        with c1:
+    with col_left:
+        st.markdown("<div class='panel-card'><div class='panel-title'>Virtual Drill Twin Control</div>", unsafe_allow_html=True)
+        # Action execution inputs
+        btn_1, btn_2 = st.columns(2)
+        with btn_1:
             if st.button("▶ START" if not st.session_state.running else "⏸ STOP", use_container_width=True):
                 st.session_state.running = not st.session_state.running
-                st.session_state.log.insert(0, f"[{datetime.now().strftime('%H:%M:%S')}] USER INTERACTION: TOGGLE STATE")
                 st.rerun()
-        with c2:
-            if st.button(f"🔄 {st.session_state.mode}", use_container_width=True):
+        with btn_2:
+            if st.button(f"⚙️ {st.session_state.mode}", use_container_width=True):
                 st.session_state.mode = "AUTO" if st.session_state.mode == "MANUAL" else "MANUAL"
                 st.rerun()
                 
+        # Simulated rotational twin element
         st.markdown(f"""
-            <div style="text-align:center; padding:30px 0;">
-                <div style="font-size:4rem; color:{'#10B981' if st.session_state.running else '#64748B'};">🌀</div>
-                <div class="metric-value">{current_packet['Spindle_Speed']}<span class="metric-unit">RPM</span></div>
-                <div style="color:#64748B; font-size:0.8rem; margin-top:5px;">SPINDLE MOTOR VELOCITY</div>
+            <div style='text-align:center; padding:35px 0;'>
+                <div style='font-size:3.5rem; color:{'#00F0FF' if st.session_state.running else '#334155'}; animation: spin 2s linear infinite;'>🌀</div>
+                <div style='font-size:1.8rem; font-weight:700; font-family:monospace; color:#FFFFFF; margin-top:10px;'>{pkt['Spindle_Speed']}<span style='font-size:0.8rem; color:#475569;'> RPM</span></div>
+                <div style='font-size:0.7rem; color:#475569; letter-spacing:0.05em;'>SPINDLE VELOCITY ROTATION TRACKER</div>
             </div>
         """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
         
-        # Real-time System Alert Log Display
-        st.markdown("<div class='panel-box'><div class='panel-header'>⚠️ SYSTEM ALERT LOGS</div>", unsafe_allow_html=True)
-        for entry in st.session_state.log[:4]:
-            st.markdown(f"<p style='font-family:monospace; font-size:0.75rem; color:#EF4444; margin:2px 0;'>{entry}</p>", unsafe_allow_html=True)
+        # Real-time event logging
+        st.markdown("<div class='panel-card'><div class='panel-title'>Active Alert Stream Logs</div>", unsafe_allow_html=True)
+        for log in st.session_state.logs[:4]:
+            st.markdown(f"<p style='font-family:monospace; font-size:0.7rem; color:#F43F5E; margin:3px 0;'>{log}</p>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with layout_right:
-        st.markdown("<div class='panel-box'><div class='panel-header'>PROBABILISTIC FAILURE FORECAST</div>", unsafe_allow_html=True)
-        prob_val = current_packet['Failure_Prob']
-        color_hex = "#EF4444" if prob_val > 50.0 else ("#F59E0B" if prob_val > 30.0 else "#10B981")
-        st.markdown(f"<div style='font-size:2.5rem; font-weight:bold; font-family:monospace; color:{color_hex};'>{prob_val}%</div>", unsafe_allow_html=True)
+    with col_right:
+        # High Density 3x2 Matrix Setup
+        st.markdown("<div class='panel-card'><div class='panel-title'>High-Density Realtime Sensor Matrix</div>", unsafe_allow_html=True)
+        g_1, g_2, g_3 = st.columns(3)
+        with g_1:
+            st.markdown(f"<div class='matrix-box'><div class='matrix-label'>🛢️ OIL RATE</div><div class='matrix-value'>44<span class='matrix-unit'>%</span></div></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='matrix-box'><div class='matrix-label'>🌡️ SPINDLE HEAT</div><div class='matrix-value'>{pkt['Temperature']}<span class='matrix-unit'>°C</span></div></div>", unsafe_allow_html=True)
+        with g_2:
+            st.markdown(f"<div class='matrix-box'><div class='matrix-label'>⏳ TOOL WEAR</div><div class='matrix-value'>{pkt['Tool_Wear']}<span class='matrix-unit'>%</span></div></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='matrix-box'><div class='matrix-label'>📳 VIBRATION RMS</div><div class='matrix-value'>{pkt['Vibration']}<span class='matrix-unit'>mm/s</span></div></div>", unsafe_allow_html=True)
+        with g_3:
+            st.markdown(f"<div class='matrix-box'><div class='matrix-label'>⚡ ACCELERATION</div><div class='matrix-value'>1.85<span class='matrix-unit'>G</span></div></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='matrix-box'><div class='matrix-label'>🔮 RISK PROBABILITY</div><div class='matrix-value' style='color:#EF4444;'>{pkt['Failure_Prob']}<span class='matrix-unit'>%</span></div></div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
         
-        # 3x2 Matrix Grid for Secondary High-Density Sensor Parameters
-        st.markdown("<div class='panel-box'><div class='panel-header'>LIVE REAL-TIME TELEMETRY MATRIX</div>", unsafe_allow_html=True)
-        m_col1, m_col2, m_col3 = st.columns(3)
-        
-        with m_col1:
-            st.markdown(f"<div><span style='color:#64748B; font-size:0.8rem;'>VIBRATION</span><br><span class='metric-value'>{current_packet['Vibration']}</span><span class='metric-unit'>mm/s</span></div>", unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"<div><span style='color:#64748B; font-size:0.8rem;'>TEMPERATURE</span><br><span class='metric-value'>{current_packet['Temperature']}</span><span class='metric-unit'>°C</span></div>", unsafe_allow_html=True)
-            
-        with m_col2:
-            st.markdown(f"<div><span style='color:#64748B; font-size:0.8rem;'>TORQUE</span><br><span class='metric-value'>{current_packet['Torque']}</span><span class='metric-unit'>Nm</span></div>", unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"<div><span style='color:#64748B; font-size:0.8rem;'>PRESSURE</span><br><span class='metric-value'>{current_packet['Pressure']}</span><span class='metric-unit'>bar</span></div>", unsafe_allow_html=True)
-            
-        with m_col3:
-            st.markdown(f"<div><span style='color:#64748B; font-size:0.8rem;'>TOOL WEAR PROFILE</span><br><span class='metric-value'>{current_packet['Tool_Wear']}%</span></div>", unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"<div><span style='color:#64748B; font-size:0.8rem;'>SAMPLING FREQUENCY</span><br><span class='metric-value'>2.4</span><span class='metric-unit'>kHz</span></div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Sparklines / Time-Series Telemetry Sub-plots
-        st.markdown("<div class='panel-box'><div class='panel-header'>TREND TIMELINE - PREDICTOR OVERLAYS</div>", unsafe_allow_html=True)
-        if not df_history.empty:
+        # Micro timelines 
+        st.markdown("<div class='panel-card'><div class='panel-title'>Realtime Metric Waveforms</div>", unsafe_allow_html=True)
+        if st.session_state.running:
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=df_history['Timestamp'], y=df_history['Temperature'], name="Temp (°C)", line=dict(color='#FF4B4B', width=2)))
-            fig.add_trace(go.Scatter(x=df_history['Timestamp'], y=df_history['Vibration'] * 10, name="Vibration x10 (mm/s)", line=dict(color='#00F0FF', width=2)))
-            fig.add_trace(go.Scatter(x=df_history['Timestamp'], y=df_history['Failure_Prob'], name="Risk %", line=dict(color='#F59E0B', width=1, dash='dot')))
-            fig.update_layout(
-                template="plotly_dark",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                margin=dict(l=10, r=10, t=10, b=10),
-                height=180,
-                xaxis=dict(showgrid=False),
-                yaxis=dict(showgrid=True, gridcolor='#1E293B')
-            )
+            fig.add_trace(go.Scatter(x=hist_df['Timestamp'], y=hist_df['Temperature'], name="Temp (°C)", line=dict(color='#EF4444', width=2)))
+            fig.add_trace(go.Scatter(x=hist_df['Timestamp'], y=hist_df['Vibration'] * 12, name="Vibration (Scaled)", line=dict(color='#00F0FF', width=2)))
+            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10,r=10,t=10,b=10), height=160, xaxis=dict(showgrid=False))
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
         else:
-            st.info("System on Standby. Toggle 'START' engine to initialize visualization stream pipelines.")
+            st.info("System idling. Engage the 'START' hardware toggle switch to pipe incoming live telemetry matrices.")
         st.markdown("</div>", unsafe_allow_html=True)
 
 # =====================================================================
-# TAB 2: EXPLORATORY ANOMALY DATA ANALYTICS
+# TAB 2: ANALYTICS PREDICTIVE HAZARD AREAS
 # =====================================================================
 with tab_analytics:
-    st.markdown("<div class='panel-box'><div class='panel-header'>HISTORICAL DATASET STATISTICAL OVERVIEW (10,000 DRILL CYCLES)</div>", unsafe_allow_html=True)
-    
-    # Static mockup dataset summary to mirror the analytical view in video 1
-    mock_summary = pd.DataFrame({
-        'Feature Metric': ['Temperature', 'Vibration', 'Spindle Speed', 'Torque', 'Tool Wear'],
-        'Min Bounds': [32.4, 0.12, 850, 2.1, 0.0],
-        'Max Bounds': [98.6, 8.41, 2400, 64.2, 100.0],
-        'Mean Avg': [54.2, 2.15, 1642, 18.4, 42.1],
-        'Failure Correlation': ['84.2%', '91.5%', '-45.1%', '76.8%', '89.1%']
+    st.markdown("<div class='panel-card'><div class='panel-title'>Machine Run Summary Metrics</div>", unsafe_allow_html=True)
+    an_df = pd.DataFrame({
+        'Telemetry Variable': ['Temperature Sensor', 'Vibration Matrix', 'Rotational Velocity', 'Torque Stress Load'],
+        'Operational Min': [31.5, 0.08, 920, 1.8],
+        'Operational Max': [94.2, 7.85, 2350, 61.4],
+        'Calculated Median': [51.4, 2.04, 1624, 16.2],
+        'System Weight Value': ['84.1%', '92.4%', '41.5%', '79.2%']
     })
-    st.table(mock_summary)
+    st.table(an_df)
     st.markdown("</div>", unsafe_allow_html=True)
-    
-    an_col1, an_col2 = st.columns(2)
-    with an_col1:
-        st.markdown("<div class='panel-box'><div class='panel-header'>WEAR REGIME FREQUENCY DISTRIBUTION</div>", unsafe_allow_html=True)
-        # Mocking categorical distribution charts
-        wear_labels = ['0-25 μm (New)', '25-100 μm (Normal)', '100-200 μm (Warning)', '>200 μm (Critical Fault)']
-        wear_values = [1200, 6800, 1500, 500]
-        fig_pie = go.Figure(data=[go.Pie(labels=wear_labels, values=wear_values, hole=.4, marker=dict(colors=['#10B981','#3B82F6','#F59E0B','#EF4444']))])
-        fig_pie.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10, t=10, b=10), height=240)
-        st.plotly_chart(fig_pie, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    with an_col2:
-        st.markdown("<div class='panel-box'><div class='panel-header'>TORQUE VS SPINDLE VELOCITY CLUSTERING DESIGNS</div>", unsafe_allow_html=True)
-        # Scatter layout cluster visualization
-        np.random.seed(42)
-        mock_rpm = np.random.normal(1600, 300, 200)
-        mock_trq = 100000 / (mock_rpm + 1) + np.random.normal(10, 3, 200)
-        fig_scatter = go.Figure(data=go.Scatter(x=mock_rpm, y=mock_trq, mode='markers', marker=dict(color='#00F0FF', opacity=0.6)))
-        fig_scatter.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10, t=10, b=10), height=240)
-        st.plotly_chart(fig_scatter, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
 # =====================================================================
-# TAB 3: MACHINE LEARNING EVALUATION METRICS
+# TAB 3: STEPWISE FORECAST REGIMES (COMBINED FROM MATLAB VIDEO)
 # =====================================================================
 with tab_ml:
-    ml_col1, ml_col2 = st.columns([0.3, 0.7])
+    st.markdown("<div class='panel-card'><div class='panel-title'>Stepwise Horizon Predictive Machine Learning</div>", unsafe_allow_html=True)
     
-    with ml_col1:
-        st.markdown("<div class='panel-box'><div class='panel-header'>MODEL VALIDATION METRICS</div>", unsafe_allow_html=True)
-        st.markdown("""
-            <div style='margin-bottom:15px;'>
-                <span style='color:#64748B; font-size:0.75rem;'>CLASSIFICATION ACCURACY</span><br>
-                <span style='font-size:2rem; font-weight:bold; color:#10B981;'>99.5%</span>
-            </div>
-            <div style='margin-bottom:15px;'>
-                <span style='color:#64748B; font-size:0.75rem;'>PRECISION METRIC SCORE</span><br>
-                <span style='font-size:2rem; font-weight:bold; color:#00F0FF;'>100.0%</span>
-            </div>
-            <div style='margin-bottom:15px;'>
-                <span style='color:#64748B; font-size:0.75rem;'>MODEL SENSITIVITY (RECALL)</span><br>
-                <span style='font-size:2rem; font-weight:bold; color:#F59E0B;'>97.1%</span>
-            </div>
-            <div>
-                <span style='color:#64748B; font-size:0.75rem;'>F1 CONFIDENCE SCORE</span><br>
-                <span style='font-size:2rem; font-weight:bold; color:#10B981;'>98.6%</span>
-            </div>
-        """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Matching the Stepwise Horizon Slider from video 3
+    st.session_state.horizon = st.select_slider("Select Stepwise Prediction Horizon Steps:", options=[5, 10, 15], value=st.session_state.horizon)
+    
+    h_col1, h_col2 = st.columns([0.7, 0.3])
+    with h_col1:
+        # Build multi step forecasting visualization path
+        x_steps = [f"T + {i}" for i in range(1, st.session_state.horizon + 1)]
         
-    with ml_col2:
-        st.markdown("<div class='panel-box'><div class='panel-header'>FEATURE IMPORTANCE SHAP RANKINGS</div>", unsafe_allow_html=True)
-        features = ['Vibration RMS', 'Torque Elasticity', 'Spindle Delta', 'Chamber Heat', 'Tool Wear Index']
-        importance = [0.427, 0.218, 0.161, 0.124, 0.070]
-        fig_bar = go.Figure(go.Bar(x=importance, y=features, orientation='h', marker_color='#3B82F6'))
-        fig_bar.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10, t=10, b=10), height=230)
-        st.plotly_chart(fig_bar, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# =====================================================================
-# TAB 4: INTER-OPERABLE MATLAB PIPELINE INTEGRATION GUIDE
-# =====================================================================
-with tab_matlab:
-    st.markdown("<div class='panel-box'><div class='panel-header'>PRODUCTION IMPLEMENTATION METHODS AND CONNECTOR SCRIPTS</div>", unsafe_allow_html=True)
-    
-    m_method = st.radio("Select Interface Pipeline Architecture:", [
-        "Method 1: CSV Bulk Batch Pipeline Engine", 
-        "Method 2: Real-time MATLAB Python Engine Core",
-        "Method 3: Distributed TCP/IP Streaming Sockets"
-    ])
-    
-    st.markdown("---")
-    
-    if "Method 1" in m_method:
-        st.subheader("Data Export Pipeline Implementation (MATLAB ➡️ Streamlit)")
-        st.code("""
-% MATLAB Telemetry Serialization Script
-% Purpose: Dump physical streaming data matrix arrays to disk
-data_matrix = [temperature_vector, vibration_vector, speed_vector, torque_vector];
-csv_headers = {'Temperature', 'Vibration', 'Spindle_Speed', 'Torque'};
-
-output_table = array2table(data_matrix, 'VariableNames', csv_headers);
-writetable(output_table, 'drill_sensor_data.csv');
-disp('Telemetry frame matrices successfully synced.');
-        """, language="matlab")
+        # Smooth wave logic trajectory
+        y_vals = [float(pkt['Failure_Prob']) + (np.sin(i/2) * 5) + (i * 1.2) for i in range(1, st.session_state.horizon + 1)]
         
-    elif "Method 2" in m_method:
-        st.subheader("Live Process Model Mapping via Python Engine APIs")
-        st.code("""
-# Python execution terminal calling native MATLAB compiled runtimes
-import matlab.engine
-
-eng = matlab.engine.start_matlab()
-# Execute failure classification network weights directly inside original matrix workspaces
-failure_probability = eng.predict_cnc_fault(float(vibration), float(temperature))
-print(f"MATLAB Execution Predicted Health Matrix Index: {failure_probability}%")
-        """, language="python")
+        fig_step = go.Figure()
+        fig_step.add_trace(go.Scatter(x=x_steps, y=y_vals, mode='lines+markers', name='Predictive Trend Line', line=dict(color='#00F0FF', width=3)))
+        fig_step.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=250, margin=dict(l=10,r=10,t=10,b=10))
+        st.plotly_chart(fig_step, use_container_width=True)
         
-    else:
-        st.subheader("High Frequency Low-Latency Streaming Configuration via TCP/IP")
-        st.code("""
-% MATLAB Send Socket Configuration
-t_client = tcpclient('127.0.0.1', 5005);
-while true
-    sensor_packet = [vibration_value, temperature_value, torque_value];
-    write(t_client, sensor_packet, "double");
-    pause(0.01); % Stream at steady 100Hz pipelines
-end
-        """, language="matlab")
+    with h_col2:
+        st.markdown("<p style='color:#64748B; font-size:0.75rem; font-weight:bold;'>ESTIMATED HORIZON TARGET VALUES</p>", unsafe_allow_html=True)
+        forecast_records = pd.DataFrame({
+            'Step Step': x_steps,
+            'Failure Risk %': [f"{round(min(100.0, y), 1)}%" for y in y_vals]
+        })
+        st.dataframe(forecast_records, use_container_width=True, height=220)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =====================================================================
-# 5. HIGH-FREQUENCY INTERACTION LOOP MECHANISM
+# TAB 4: PRODUCTION COMPILED MATLAB WORKFLOW SCRIPTS
+# =====================================================================
+with tab_matlab:
+    st.markdown("<div class='panel-card'><div class='panel-title'>Compiled Production Pipelines</div>", unsafe_allow_html=True)
+    st.subheader("High Frequency Core Processing Logic Loop")
+    st.code("""
+% MATLAB Core Low-Latency Processing & Matrix Transformation Script
+% Initialize programmatic sockets to intercept machine telemetry matrices
+t_socket = tcpclient('127.0.0.1', 5005);
+
+while true
+    if t_socket.BytesAvailable > 0
+        raw_matrix = read(t_socket, t_socket.BytesAvailable, "double");
+        
+        % Normalize array parameters using validation logic
+        normalized_temp = (raw_matrix(1) - 20) / (100 - 20);
+        normalized_vibe = raw_matrix(2) / 10.0;
+        
+        fprintf('Processing System Arrays -- Temperature: %f, Vibration: %f\\n', normalized_temp, normalized_vibe);
+    end
+    pause(0.1);
+end
+    """, language="matlab")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =====================================================================
+# 5. HIGH REFRESH RATE EXECUTION LATENCY TIMING
 # =====================================================================
 if st.session_state.running:
-    time.sleep(0.8) # Set sample clock cycle refresh rate latency
+    time.sleep(0.6) # High-speed operational polling loop delay clock
     st.rerun()
+
         
